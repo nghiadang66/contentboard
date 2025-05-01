@@ -1,4 +1,4 @@
-import { Home, Newspaper, Tag, StickyNote } from "lucide-react"
+import { Home, NotebookPen, FolderOpen, Tag } from "lucide-react"
 
 import {
     Sidebar,
@@ -21,12 +21,12 @@ const items = [
     {
         title: "Articles",
         url: "/dashboard/articles",
-        icon: Newspaper,
+        icon: NotebookPen,
     },
     {
         title: "Categories",
         url: "/dashboard/categories",
-        icon: StickyNote,
+        icon: FolderOpen,
     },
     {
         title: "Tags",
