@@ -1,28 +1,27 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Article, ArticleStatus } from "@/types/article";
+import { Category, Status, Tag } from "@/generated/prisma";
+
+import { ErrorAlert } from "@/components/error-alert";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "./ui/textarea";
+import { Select, SelectTrigger, SelectContent, SelectValue, SelectItem } from "@/components/ui/select";
+import ReactSelect from "react-select";
 
 const formSchema = z.object({
-    title: z.string().trim().min(5).max(75),
-    content: z.string().trim().min(1),
-    category: z.string().trim().optional(),
-    tags: z.array(z.string().trim().optional()),
-    status: z.nativeEnum(ArticleStatus)
+    title: z.string().trim().nonempty("Field is required").max(75),
+    content: z.string().trim().nonempty("Field is required"),
+    category: z.string().trim(),
+    tags: z.array(z.string().trim()),
+    status: z.string().trim().nonempty("Field is required")
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -35,17 +34,43 @@ export default function ArticleForm() {
             content: "",
             category: "",
             tags: [],
-            status: ArticleStatus.draft,
+            status: "",
         }
     });
 
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [tags, setTags] = useState<Tag[]>([]);
+    const [status, setStatus] = useState<Status[]>([]);
+
+    useEffect(() => {
+        fetch("/api/article-form-options")
+            .then(res => res.json())
+            .then(({ categories, tags, status }) => {
+                setCategories(categories);
+                setTags(tags);
+                setStatus(status);
+            })
+            .catch(error => {
+                console.error(error);
+                setError("Error on loading data");
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
     function onSubmit(values: FormSchema) {
-        console.log(values);
+        console.log("Submit values:", values);
     }
+
+    if (loading) return <div>Loading...</div>;
 
     return (
         <Form {...form}>
+            {error ? <ErrorAlert message={error} /> : ""}
+
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                {/* Title */}
                 <FormField
                     control={form.control}
                     name="title"
@@ -63,6 +88,7 @@ export default function ArticleForm() {
                     )}
                 />
 
+                {/* Content */}
                 <FormField
                     control={form.control}
                     name="content"
@@ -70,27 +96,90 @@ export default function ArticleForm() {
                         <FormItem>
                             <FormLabel>Content</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="Content" {...field} />
+                                <Textarea rows={5} placeholder="Content..." {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
 
+                {/* Status */}
+                <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Status</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a status" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {status.map(stt => (
+                                        <SelectItem key={stt.id} value={stt.name}>
+                                            {stt.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                {/* Category */}
                 <FormField
                     control={form.control}
                     name="category"
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Category</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a category" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {categories.map(cat => (
+                                        <SelectItem key={cat.id} value={cat.name}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                {/* Tags */}
+                <FormField
+                    control={form.control}
+                    name="tags"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Tags</FormLabel>
                             <FormControl>
-                                <Input placeholder="Category" {...field} />
+                                <ReactSelect
+                                    isMulti
+                                    className="text-sm"
+                                    options={tags.map(tag => ({ label: tag.name, value: tag.id }))}
+                                    value={field.value.map(id => {
+                                        const tag = tags.find(tag => tag.id === id);
+                                        return tag ? { label: tag.name, value: tag.id } : null;
+                                    }).filter(Boolean)}
+                                    onChange={val => field.onChange(val.map(v => v?.value))}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
 
+                {/* Submit */}
                 <Button type="submit">Submit</Button>
             </form>
         </Form>

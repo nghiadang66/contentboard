@@ -1,8 +1,3 @@
-export enum ArticleStatus {
-    draft,
-    published
-}
-
 export interface Article {
     id: string,
     title: string,
@@ -10,6 +5,6 @@ export interface Article {
     content: string,
     category: string,
     tags: string[],
-    status: ArticleStatus,
+    status: string,
     createdAt: string
 }
