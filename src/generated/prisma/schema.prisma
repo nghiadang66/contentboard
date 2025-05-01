@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Run: npx prisma migrate dev --name init
+// Run: npx prisma generate
+// This creates dev.db and prepares the Prisma Client.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Articles → Status (1:N)
+// Articles → Categories (1:N)
+// Articles → Tags (N:M)
+
+model Category {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  articles Article[]
+}
+
+model Tag {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  articles Article[] @relation("ArticleTags")
+}
+
+model Status {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  articles Article[]
+}
+
+model Article {
+  id         String    @id @default(uuid())
+  title      String
+  slug       String    @unique
+  content    String
+  status     Status    @relation(fields: [statusId], references: [id])
+  statusId   String
+  createdAt  DateTime  @default(now())
+  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  tags       Tag[]     @relation("ArticleTags")
+}
