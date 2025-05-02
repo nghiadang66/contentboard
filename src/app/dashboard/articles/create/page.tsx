@@ -1,4 +1,4 @@
-import ArticleForm from "@/components/ArticleForm";
+import ArticleForm from "./form";
 
 export default function ArticlesPage() {
     return (

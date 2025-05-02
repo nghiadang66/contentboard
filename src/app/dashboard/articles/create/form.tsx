@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Category, Status, Tag } from "@/generated/prisma";
 
 import { ErrorAlert } from "@/components/error-alert";
+import { Loading } from "@/components/loading";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Select, SelectTrigger, SelectContent, SelectValue, SelectItem } from "@/components/ui/select";
 import ReactSelect from "react-select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const formSchema = z.object({
     title: z.string().trim().nonempty("Field is required").max(75),
@@ -45,25 +47,49 @@ export default function ArticleForm() {
     const [status, setStatus] = useState<Status[]>([]);
 
     useEffect(() => {
-        fetch("/api/article-form-options")
-            .then(res => res.json())
-            .then(({ categories, tags, status }) => {
+        async function fetchOptions() {
+            try {
+                setError("");
+                setLoading(true);
+
+                const [statusRes, categoryRes, tagRes] = await Promise.all([
+                    fetch("/api/status"),
+                    fetch("/api/categories"),
+                    fetch("/api/tags"),
+                ]);
+            
+                const status = await statusRes.json();
+                const { categories } = await categoryRes.json();
+                const { tags } = await tagRes.json();
+            
+                setStatus(status);
                 setCategories(categories);
                 setTags(tags);
-                setStatus(status);
-            })
-            .catch(error => {
-                console.error(error);
-                setError("Error on loading data");
-            })
-            .finally(() => setLoading(false));
+        
+            } catch (err) {
+                console.error("Failed to load article form options:", err);
+                setError("Failed to load article form options.");
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        fetchOptions();
     }, []);
 
     function onSubmit(values: FormSchema) {
         console.log("Submit values:", values);
     }
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return (
+        <Loading>
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+        </Loading>
+    );
 
     return (
         <Form {...form}>
@@ -112,7 +138,7 @@ export default function ArticleForm() {
                             <FormLabel>Status</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select a status" />
                                     </SelectTrigger>
                                 </FormControl>
@@ -138,7 +164,7 @@ export default function ArticleForm() {
                             <FormLabel>Category</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select a category" />
                                     </SelectTrigger>
                                 </FormControl>
