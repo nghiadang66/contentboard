@@ -10,6 +10,15 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from "@/components/ui/pagination";  
 import { Article } from "@/generated/prisma";
 import { Loading } from "@/components/loading";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,7 +36,11 @@ export default function ArticleTable() {
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState<{ [key: string]: string }>({});
     const [data, setData] = useState<ArticleWithRelations[]>([]);
-    const [serverQuery, setServerQuery] = useState({});
+    const [serverQuery, setServerQuery] = useState<{
+        page?: string;
+        total_pages?: string;
+        [key: string]: any;
+    }>({});
 
     useEffect(() => {
         const search = new URLSearchParams(query).toString();
@@ -53,6 +66,13 @@ export default function ArticleTable() {
             content: event.target.value,
         });
     }
+
+    function goToPage(page: number) {
+        setQuery({
+            ...serverQuery,
+            page: page.toString()
+        });
+    }
     
     return (
         <div className="space-y-6">
@@ -65,13 +85,17 @@ export default function ArticleTable() {
                 />
             </div>
 
+            <h2 className="font-semibold">Total: {Number(serverQuery.total_results ?? 0)}</h2>
+
             {loading ? (
                 <Loading>
                     <Skeleton className="h-48 w-full"/>
                 </Loading>
             ) : (
                 <Table>
-                    <TableCaption>A list of your recent articles.</TableCaption>
+                    <TableCaption>
+                        Total per page: {Number(serverQuery.limit ?? 1)}. Pages: {Number(serverQuery.total_pages ?? 1)}.
+                    </TableCaption>
                     <TableHeader>
                         <TableRow>
                             <TableHead className="w-[120px]">Title</TableHead>
@@ -105,6 +129,40 @@ export default function ArticleTable() {
                     </TableBody>
                 </Table>
             )}
+
+            <Pagination>
+                <PaginationContent>
+                    <PaginationItem>
+                        <PaginationPrevious
+                            href="#"
+                            onClick={() => goToPage(Math.max(1, Number(serverQuery.page ?? 1) - 1))}
+                        />
+                    </PaginationItem>
+
+                    {[...Array(Number(serverQuery.total_pages ?? 1))].map((_, i) => {
+                        const current = i + 1;
+                        return (
+                            <PaginationItem key={current}>
+                                <PaginationLink
+                                    href="#"
+                                    isActive={current === (Number(serverQuery.page) ?? 1)}
+                                    onClick={() => goToPage(current)}
+                                >
+                                    {current}
+                                </PaginationLink>
+                            </PaginationItem>
+                        );
+                    })}
+
+                    <PaginationItem>
+                        <PaginationNext
+                            href="#"
+                            onClick={() => goToPage(Math.min(Number(serverQuery.total_pages ?? 1), Number(serverQuery.page ?? 1) + 1))}
+                        />
+                    </PaginationItem>
+                </PaginationContent>
+            </Pagination>
+
         </div>
     );
 }

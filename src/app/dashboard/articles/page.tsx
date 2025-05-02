@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import ArticleTable from "./table";
-import { Plus } from "lucide-react";
 
 export default function ArticlesPage() {
     return (
