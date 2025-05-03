@@ -16,6 +16,7 @@ import { Select, SelectTrigger, SelectContent, SelectValue, SelectItem } from "@
 import ReactSelect from "react-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import dynamic from "next/dynamic";
 
 const formSchema = z.object({
     id: z.string().optional(),
@@ -51,6 +52,7 @@ export default function ArticleForm({
         resolver: zodResolver(formSchema),
         defaultValues
     });
+    const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -138,21 +140,6 @@ export default function ArticleForm({
                     )}
                 />
 
-                {/* Content */}
-                <FormField
-                    control={form.control}
-                    name="content"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Content</FormLabel>
-                            <FormControl>
-                                <Textarea rows={5} placeholder="Content..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
                 {/* Status */}
                 <FormField
                     control={form.control}
@@ -222,6 +209,26 @@ export default function ArticleForm({
                                         return tag ? { label: tag.name, value: tag.id } : null;
                                     }).filter(Boolean)}
                                     onChange={val => field.onChange(val.map(v => v?.value))}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                {/* Content */}
+                <FormField
+                    control={form.control}
+                    name="content"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Content</FormLabel>
+                            <FormControl>
+                                <MDEditor
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    height={500}
+                                    preview="edit"
                                 />
                             </FormControl>
                             <FormMessage />

@@ -9,9 +9,9 @@ export default function ArticlesPage() {
             <div className="flex w-full justify-between">
                 <h1 className="text-2xl font-bold">Create Articles</h1>
 
-                <Button asChild>
+                <Button asChild variant="outline">
                     <Link href="/dashboard/articles">
-                        <ArrowLeft /> Back
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back
                     </Link>
                 </Button>
             </div>

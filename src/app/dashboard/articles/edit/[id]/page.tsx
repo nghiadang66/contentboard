@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye } from "lucide-react";
 
 export default function EditArticleClientPage() {
     const { id } = useParams();
@@ -35,11 +35,18 @@ export default function EditArticleClientPage() {
             <div className="flex w-full justify-between">
                 <h1 className="text-2xl font-bold">Edit Articles</h1>
 
-                <Button asChild>
-                    <Link href="/dashboard/articles">
-                        <ArrowLeft /> Back
-                    </Link>
-                </Button>
+                <div className="flex items-center space-x-2">
+                    <Button asChild>
+                        <Link href={`/dashboard/articles/view/${id}`}>
+                            <Eye className="h-4 w-4" /> View
+                        </Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                        <Link href="/dashboard/articles">
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             <ArticleForm defaultValues={data} />;

@@ -12,8 +12,9 @@ import { SortButton } from "@/components/sort-button";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Pencil, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import ReactMarkdown from "react-markdown";
 
 type ArticleWithRelations = Article & {
     category?: { name: string };
@@ -94,7 +95,7 @@ export default function ArticleTable() {
         <div className="space-y-6">
             {loading ? <Loading /> : ""}
             
-            <div className="w-full max-w-[480px]">
+            <div className="w-full w-[480px]">
                 <SearchBar value={query.content} onChange={onSearchChange} />
             </div>
 
@@ -106,7 +107,7 @@ export default function ArticleTable() {
                 </TableCaption>
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="w-[120px]">
+                        <TableHead>
                             <SortButton 
                                 query={serverQuery} 
                                 orderBy="title" 
@@ -114,60 +115,58 @@ export default function ArticleTable() {
                             >Title</SortButton>
                         </TableHead>
                         <TableHead>Content</TableHead>
-                        <TableHead className="w-[120px]">Status</TableHead>
-                        <TableHead className="w-[120px]">Category</TableHead>
-                        <TableHead className="w-[120px]">Tags</TableHead>
-                        <TableHead className="text-right w-[120px]">
+                        <TableHead className="w-[100px]">Status</TableHead>
+                        <TableHead className="w-[100px]">Category</TableHead>
+                        <TableHead className="w-[100px]">Tags</TableHead>
+                        <TableHead className="text-right w-[100px]">
                             <SortButton 
                                 query={serverQuery} 
                                 orderBy="createdAt"
                                 handleSort={handleSort} 
                             >Created At</SortButton>
                         </TableHead>
-                        <TableHead className="text-right w-[120px]"></TableHead>
+                        <TableHead className="w-[100px]"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {data.map(a => (
                         <TableRow key={a.id}>
                             <TableCell>
-                                <span className="font-medium">{a.title}</span><br/>
-                                <span className="italic text-xs">{a.slug}</span><br/>
+                                <Link
+                                    href={`/dashboard/articles/view/${a.id}`}
+                                    className="font-medium underline hover:text-blue-600"
+                                >
+                                    {a.title}
+                                </Link>
+                                <br />
+                                <span className="text-sm text-muted-foreground italic">{a.slug}</span>
                             </TableCell>
                             <TableCell>
-                                <div 
-                                    className="text-justify max-h-[60px] overflow-hidden text-ellipsis line-clamp-3"
-                                    dangerouslySetInnerHTML={{
-                                        __html: a.content
-                                    }} 
-                                />
-                                </TableCell>
+                                <div className="prose prose-sm max-w-[400px] line-clamp-4 overflow-hidden text-ellipsis">
+                                    <ReactMarkdown>{a.content}</ReactMarkdown>
+                                </div>
+                            </TableCell>
                             <TableCell>{a.status?.name ?? "-"}</TableCell>
                             <TableCell>{a.category?.name ?? "-"}</TableCell>
                             <TableCell>{a.tags?.map(t => t.name).join(", ") ?? "-"}</TableCell>
                             <TableCell className="text-right">
                                 {new Date(a.createdAt).toLocaleDateString()}
                             </TableCell>
-                            <TableCell className="flex space-x-2">
-                            <Button asChild>
-                                <Link href={`/dashboard/articles/edit/${a.id}`}>
-                                    <Pencil className="h-4 w-4" />
-                                </Link>
-                            </Button>
-                            <ConfirmDialog 
-                                title="Delete Article"
-                                message="Do you really want to delete this article?"
-                                triggerChildren={
-                                    <Button variant="destructive">
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                }
-                                confirmChildren={
-                                    <Button variant="destructive" onClick={() => handleDelete(a.id)}>
-                                        Delete
-                                    </Button>
-                                }
-                            />
+                            <TableCell className="text-center">
+                                <ConfirmDialog 
+                                    title="Delete Article"
+                                    message="Do you really want to delete this article?"
+                                    triggerChildren={
+                                        <Button variant="destructive">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    }
+                                    confirmChildren={
+                                        <Button variant="destructive" onClick={() => handleDelete(a.id)}>
+                                            Delete
+                                        </Button>
+                                    }
+                                />
                             </TableCell>
                         </TableRow>
                     ))}
