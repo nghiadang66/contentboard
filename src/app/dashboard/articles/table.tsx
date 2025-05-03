@@ -2,22 +2,18 @@
 
 import { useState, useEffect } from "react";
 import {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+    Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"; 
 import { Article } from "@/generated/prisma";
 import { Loading } from "@/components/loading";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorAlert } from "@/components/error-alert";
 import { PaginationBlock } from "@/components/pagination";
 import { SearchBar } from "@/components/search-bar";
 import { SortButton } from "@/components/sort-button";
-
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Pencil, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 type ArticleWithRelations = Article & {
     category?: { name: string };
@@ -26,7 +22,6 @@ type ArticleWithRelations = Article & {
 };
 
 export default function ArticleTable() {
-    const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState<{ [key: string]: string }>({});
     const [data, setData] = useState<ArticleWithRelations[]>([]);
@@ -38,9 +33,6 @@ export default function ArticleTable() {
 
     useEffect(() => {
         const search = new URLSearchParams(query).toString();
-        setError("");
-        setLoading(true);
-
         fetch("/api/articles?" + search)
             .then(res => res.json())
             .then(({ query, articles }) => {
@@ -48,11 +40,13 @@ export default function ArticleTable() {
                 setServerQuery(query);
             })
             .catch(err => {
-                console.error("Failed to load article table data:", err);
-                setError("Failed to load article table data.");
+                console.error("Failed to load article data.", err);
+                toast.error("Failed to load article data.", {
+                    description: (err as Error).message
+                });
             })
             .finally(() => setLoading(false));
-    }, [JSON.stringify(query)]);
+    }, [query]);
 
     function onSearchChange(event: React.ChangeEvent<HTMLInputElement>) {
         setQuery({
@@ -75,10 +69,29 @@ export default function ArticleTable() {
             page: page.toString()
         });
     }
+
+    async function handleDelete(id: string) {
+        await toast.promise(
+            fetch(`/api/articles/${id}`, {
+                method: "DELETE",
+            }).then(async res => {
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.error || "Unknown error");
+                return result;
+            }),
+            {
+                loading: "Deleting...",
+                success: "Article deleted.",
+                error: "Failed to delete article.",
+            }
+        );
+
+        setQuery({ ...serverQuery });
+    }
+      
     
     return (
         <div className="space-y-6">
-            {error ? <ErrorAlert message={error} /> : ""}
             {loading ? <Loading /> : ""}
             
             <div className="w-full max-w-[480px]">
@@ -97,21 +110,30 @@ export default function ArticleTable() {
                             <SortButton 
                                 query={serverQuery} 
                                 orderBy="title" 
-                                label="Title" 
                                 handleSort={handleSort} 
-                            />
+                            >Title</SortButton>
                         </TableHead>
                         <TableHead>Content</TableHead>
                         <TableHead className="w-[120px]">Status</TableHead>
                         <TableHead className="w-[120px]">Category</TableHead>
                         <TableHead className="w-[120px]">Tags</TableHead>
-                        <TableHead className="text-right w-[120px]">Created at</TableHead>
+                        <TableHead className="text-right w-[120px]">
+                            <SortButton 
+                                query={serverQuery} 
+                                orderBy="createdAt"
+                                handleSort={handleSort} 
+                            >Created At</SortButton>
+                        </TableHead>
+                        <TableHead className="text-right w-[120px]"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {data.map(a => (
                         <TableRow key={a.id}>
-                            <TableCell className="font-medium">{a.title}</TableCell>
+                            <TableCell>
+                                <span className="font-medium">{a.title}</span><br/>
+                                <span className="italic text-xs">{a.slug}</span><br/>
+                            </TableCell>
                             <TableCell>
                                 <div 
                                     className="text-justify max-h-[60px] overflow-hidden text-ellipsis line-clamp-3"
@@ -125,6 +147,27 @@ export default function ArticleTable() {
                             <TableCell>{a.tags?.map(t => t.name).join(", ") ?? "-"}</TableCell>
                             <TableCell className="text-right">
                                 {new Date(a.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="flex space-x-2">
+                            <Button asChild>
+                                <Link href={`/dashboard/articles/edit/${a.id}`}>
+                                    <Pencil className="h-4 w-4" />
+                                </Link>
+                            </Button>
+                            <ConfirmDialog 
+                                title="Delete Article"
+                                message="Do you really want to delete this article?"
+                                triggerChildren={
+                                    <Button variant="destructive">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                }
+                                confirmChildren={
+                                    <Button variant="destructive" onClick={() => handleDelete(a.id)}>
+                                        Delete
+                                    </Button>
+                                }
+                            />
                             </TableCell>
                         </TableRow>
                     ))}

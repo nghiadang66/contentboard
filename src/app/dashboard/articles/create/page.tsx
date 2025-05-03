@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import ArticleForm from "./form";
+import ArticleForm from "../form";
 
 export default function ArticlesPage() {
     return (

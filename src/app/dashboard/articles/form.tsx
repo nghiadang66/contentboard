@@ -5,8 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Category, Status, Tag } from "@/generated/prisma";
-
-import { ErrorAlert } from "@/components/error-alert";
 import { Loading } from "@/components/loading";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,8 +15,10 @@ import {
 import { Select, SelectTrigger, SelectContent, SelectValue, SelectItem } from "@/components/ui/select";
 import ReactSelect from "react-select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const formSchema = z.object({
+    id: z.string().optional(),
     title: z.string().trim().nonempty("Field is required").max(75),
     content: z.string().trim().nonempty("Field is required"),
     category: z.string().trim(),
@@ -28,20 +28,31 @@ const formSchema = z.object({
 
 type FormSchema = z.infer<typeof formSchema>;
 
-export default function ArticleForm() {
+export default function ArticleForm({ 
+    defaultValues = {
+        id: "",
+        title: "",
+        content: "",
+        category: "",
+        tags: [],
+        status: "",
+    }
+}: {
+    defaultValues?: {
+        id: string,
+        title: string,
+        content: string,
+        category: string,
+        tags: string[],
+        status: string,
+    }
+}) {
     const form = useForm<FormSchema>({
         resolver: zodResolver(formSchema),
-        defaultValues: {
-            title: "",
-            content: "",
-            category: "",
-            tags: [],
-            status: "",
-        }
+        defaultValues
     });
 
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [categories, setCategories] = useState<Category[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
     const [status, setStatus] = useState<Status[]>([]);
@@ -49,9 +60,6 @@ export default function ArticleForm() {
     useEffect(() => {
         async function fetchOptions() {
             try {
-                setError("");
-                setLoading(true);
-
                 const [statusRes, categoryRes, tagRes] = await Promise.all([
                     fetch("/api/status"),
                     fetch("/api/categories"),
@@ -65,10 +73,11 @@ export default function ArticleForm() {
                 setStatus(status);
                 setCategories(categories);
                 setTags(tags);
-        
             } catch (err) {
-                console.error("Failed to load article form options:", err);
-                setError("Failed to load article form options.");
+                console.error("Failed to load article options.", err);
+                toast.error("Failed to load article options.", {
+                    description: (err as Error).message
+                });
             } finally {
                 setLoading(false);
             }
@@ -78,7 +87,24 @@ export default function ArticleForm() {
     }, []);
 
     function onSubmit(values: FormSchema) {
-        console.log("Submit values:", values);
+        const method = values.id ? "PUT" : "POST";
+
+        toast.promise(
+            fetch("/api/articles", {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(values),
+            }).then(async (res) => {
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.error || "Unknown error");
+                return result;
+            }),
+            {
+              loading: "Saving article...",
+              success: "Article saved successfully!",
+              error: (err) => `Failed to save article: ${err.message}`,
+            }
+        );
     }
 
     if (loading) return (
@@ -93,8 +119,6 @@ export default function ArticleForm() {
 
     return (
         <Form {...form}>
-            {error ? <ErrorAlert message={error} /> : ""}
-
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 {/* Title */}
                 <FormField
@@ -144,7 +168,7 @@ export default function ArticleForm() {
                                 </FormControl>
                                 <SelectContent>
                                     {status.map(stt => (
-                                        <SelectItem key={stt.id} value={stt.name}>
+                                        <SelectItem key={stt.id} value={stt.id}>
                                             {stt.name}
                                         </SelectItem>
                                     ))}
@@ -170,7 +194,7 @@ export default function ArticleForm() {
                                 </FormControl>
                                 <SelectContent>
                                     {categories.map(cat => (
-                                        <SelectItem key={cat.id} value={cat.name}>
+                                        <SelectItem key={cat.id} value={cat.id}>
                                             {cat.name}
                                         </SelectItem>
                                     ))}
@@ -206,7 +230,9 @@ export default function ArticleForm() {
                 />
 
                 {/* Submit */}
-                <Button type="submit">Submit</Button>
+                <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? "Saving..." : "Submit"}
+                </Button>
             </form>
         </Form>
     );

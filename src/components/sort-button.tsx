@@ -4,12 +4,12 @@ import { ArrowDownUp, ArrowDownNarrowWide, ArrowUpNarrowWide } from "lucide-reac
 export function SortButton({ 
     query, 
     orderBy, 
-    label, 
+    children, 
     handleSort 
 }: { 
     query: { [key: string]: any }, 
     orderBy: string, 
-    label: string,
+    children?: React.ReactNode,
     handleSort: Function 
 }) {
     return (
@@ -26,7 +26,7 @@ export function SortButton({
             ): (
                 <ArrowDownUp />
             )}
-            {label}
+            {children}
         </Button>
     );
 }

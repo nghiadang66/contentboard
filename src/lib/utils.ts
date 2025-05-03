@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function genSlug(str: string): string {
-  return slugify(str);
+  return slugify(str, { lower: true, strict: true });
 }
 
 export function toInt(val: string | null, fallback: number): number {
